@@ -10,7 +10,7 @@ def create_api_app(bot: TeleBot, api_secret: str) -> FastAPI:
     class CheckSubscriptionRequest(BaseModel):
         secret: str
         user_id: int
-        channel_id: int
+        channel_id: str
 
     @app.post("/check-sub")
     async def check_subscription(payload: CheckSubscriptionRequest):

@@ -12,7 +12,7 @@ from handlers.user_game import register_user_game_handlers
 def start_api_server(app) -> threading.Thread:
     """Run the FastAPI server in a separate thread."""
     server_thread = threading.Thread(
-        target=lambda: uvicorn.run(app, host="0.0.0.0", port=8000, log_level="info"),
+        target=lambda: uvicorn.run(app, host="0.0.0.0", port=9000, log_level="info"),
         daemon=True,
     )
     server_thread.start()
