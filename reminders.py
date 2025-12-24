@@ -116,7 +116,7 @@ class ReminderService:
                 f"📌 {name}\n"
                 "⏱ Время ограничено\n"
                 "🎟 Вход — за Crash\n"
-                f"🏆 Награда: {reward}\n"
+                # f"🏆 Награда: {reward}\n"
                 f"🕒 Время начала: {starts_at}"
             )
         remaining = _format_remaining(int(reminder["starts_at"]) - now_ts)
@@ -124,7 +124,7 @@ class ReminderService:
             "⚠️ Обнаружена аномалия\n"
             f"📌 {name}\n"
             f"💥 Сбой начнется через {remaining}\n"
-            f"🏆 Награда: {reward}\n"
+            # f"🏆 Награда: {reward}\n"
             f"🕒 Время начала: {starts_at}"
         )
 

@@ -8,6 +8,7 @@ def main_menu_keyboard(notify_on: bool) -> types.InlineKeyboardMarkup:
         # types.InlineKeyboardButton(text="🎮 Играть", callback_data="game_play"),
         types.InlineKeyboardButton(text="📜 Правила", callback_data="game_rules"),
         types.InlineKeyboardButton(text="📖 Лор", callback_data="game_lore"),
+        types.InlineKeyboardButton(text="⚖️ Юридическая информация", callback_data="game_legal"),
         types.InlineKeyboardButton(
             text="🔕 Не уведомлять о Сбое" if notify_on else "🔔 Уведомлять о Сбое",
             callback_data="notify_toggle",
