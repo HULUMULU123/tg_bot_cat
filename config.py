@@ -9,6 +9,7 @@ import os
 class Settings:
     bot_token: str
     api_secret: str
+    db_path: str
 
 
 def load_settings(env_file: str | None = None) -> Settings:
@@ -21,10 +22,11 @@ def load_settings(env_file: str | None = None) -> Settings:
 
     bot_token = os.getenv("BOT_TOKEN")
     api_secret = os.getenv("API_SECRET")
+    db_path = os.getenv("DB_PATH") or str(Path(__file__).parent / "data.sqlite3")
 
     if not bot_token:
         raise ValueError("BOT_TOKEN is required. Set it in the .env file or environment variables.")
     if not api_secret:
         raise ValueError("API_SECRET is required. Set it in the .env file or environment variables.")
 
-    return Settings(bot_token=bot_token, api_secret=api_secret)
+    return Settings(bot_token=bot_token, api_secret=api_secret, db_path=db_path)

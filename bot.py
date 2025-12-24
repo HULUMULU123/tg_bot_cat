@@ -6,6 +6,8 @@ from telebot import TeleBot
 from api_server import create_api_app
 from config import load_settings
 from handlers.user_game import register_user_game_handlers
+from reminders import ReminderService
+from storage import Database
 
 
 
@@ -23,9 +25,14 @@ def main() -> None:
     settings = load_settings()
     bot = TeleBot(settings.bot_token, parse_mode="HTML")
 
-    register_user_game_handlers(bot)
+    db = Database(settings.db_path)
+    db.init()
+    reminder_service = ReminderService(bot, db)
+    reminder_service.start()
 
-    app = create_api_app(bot, settings.api_secret)
+    register_user_game_handlers(bot, db)
+
+    app = create_api_app(bot, settings.api_secret, db, reminder_service)
     start_api_server(app)
 
     bot.infinity_polling(skip_pending=True, allowed_updates=["message", "callback_query"])

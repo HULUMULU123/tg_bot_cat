@@ -3,10 +3,14 @@
 Простой телеграм-бот на библиотеке **telebot (pyTelegramBotAPI)** с игровым меню и HTTP API для проверки подписки.
 
 ## Возможности
-- Команда `/start` выводит приветствие и главное меню.
+- Команда `/start` показывает юридическую информацию и просит принять правила.
+- После принятия правил открывается приветствие и главное меню.
 - Инлайн-меню с разделами: играть, правила, лор.
 - Обработчики в отдельных модулях для удобства расширения.
-- FastAPI сервер с эндпоинтом `POST /check-sub` для проверки подписки на канал по секрету API.
+- FastAPI сервер с эндпоинтами:
+  - `POST /check-sub` для проверки подписки на канал по секрету API.
+  - `POST /check-legal` для проверки, принял ли пользователь правила.
+  - `POST /outages` для создания сбоя и напоминаний.
 
 ## Структура проекта
 ```
@@ -16,7 +20,9 @@ handlers/
   └── user_game.py  # Клиентская часть: /start и меню игры
 keyboards/
   └── game_kb.py    # Inline-клавиатуры для меню
-api_server.py       # FastAPI приложение с эндпоинтом /check-sub
+api_server.py       # FastAPI приложение с эндпоинтами /check-sub, /check-legal, /outages
+storage.py          # SQLite хранилище пользователей, сбоев и напоминаний
+reminders.py        # Сервис отправки напоминаний о сбоях
 ```
 
 ## Подготовка окружения
@@ -47,6 +53,28 @@ curl -X POST http://localhost:8000/check-sub \
 Ответ:
 ```json
 {"subscribed": true}
+```
+
+### Проверка принятия правил
+```bash
+curl -X POST http://localhost:8000/check-legal \
+  -H "Content-Type: application/json" \
+  -d '{"secret":"<API_SECRET>","user_id":123}'
+```
+Ответ:
+```json
+{"accepted": true}
+```
+
+### Создание сбоя и напоминаний
+```bash
+curl -X POST http://localhost:8000/outages \
+  -H "Content-Type: application/json" \
+  -d '{"secret":"<API_SECRET>","name":"Технический сбой","reward":"100 монет","starts_at":"2025-01-01T10:00:00+03:00","ends_at":"2025-01-01T12:00:00+03:00"}'
+```
+Ответ:
+```json
+{"outage_id": 1, "scheduled": 6}
 ```
 
 ## Примечания

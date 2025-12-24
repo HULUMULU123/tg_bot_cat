@@ -10,3 +10,12 @@ def main_menu_keyboard() -> types.InlineKeyboardMarkup:
         types.InlineKeyboardButton(text="📖 Лор", callback_data="game_lore"),
     )
     return keyboard
+
+
+def legal_accept_keyboard() -> types.InlineKeyboardMarkup:
+    """Create inline keyboard for legal acceptance."""
+    keyboard = types.InlineKeyboardMarkup(row_width=1)
+    keyboard.add(
+        types.InlineKeyboardButton(text="✅ Принимаю правила", callback_data="legal_accept"),
+    )
+    return keyboard
