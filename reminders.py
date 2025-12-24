@@ -32,6 +32,25 @@ def _format_ts(ts: int) -> str:
     return dt.strftime("%Y-%m-%d %H:%M UTC")
 
 
+def _format_remaining(seconds: int) -> str:
+    if seconds <= 0:
+        return "меньше минуты"
+    minutes = seconds // 60
+    hours = minutes // 60
+    days = hours // 24
+    minutes = minutes % 60
+    hours = hours % 24
+
+    parts: list[str] = []
+    if days:
+        parts.append(f"{days} дн.")
+    if hours:
+        parts.append(f"{hours} ч.")
+    if minutes:
+        parts.append(f"{minutes} мин.")
+    return " ".join(parts) if parts else "меньше минуты"
+
+
 class ReminderService:
     def __init__(self, bot: TeleBot, db: Database, poll_interval: int = 30) -> None:
         self._bot = bot
@@ -66,10 +85,10 @@ class ReminderService:
             now_ts = int(time.time())
             due_reminders = self._db.get_due_reminders(now_ts)
             if due_reminders:
-                self._dispatch_reminders(due_reminders)
+                self._dispatch_reminders(due_reminders, now_ts)
             self._stop_event.wait(self._poll_interval)
 
-    def _dispatch_reminders(self, reminders) -> None:
+    def _dispatch_reminders(self, reminders, now_ts: int) -> None:
         user_ids = self._db.list_user_ids(only_accepted=True)
         if not user_ids:
             for reminder in reminders:
@@ -77,7 +96,7 @@ class ReminderService:
             return
 
         for reminder in reminders:
-            message = self._build_message(reminder)
+            message = self._build_message(reminder, now_ts)
             for user_id in user_ids:
                 try:
                     self._bot.send_message(chat_id=user_id, text=message)
@@ -87,7 +106,7 @@ class ReminderService:
                     continue
             self._db.mark_reminder_sent(reminder["id"])
 
-    def _build_message(self, reminder) -> str:
+    def _build_message(self, reminder, now_ts: int) -> str:
         name = reminder["name"]
         reward = reminder["reward"] or "—"
         starts_at = _format_ts(int(reminder["starts_at"]))
@@ -95,11 +114,11 @@ class ReminderService:
         if reminder["type"] == "start":
             return (
                 f"Сбой «{name}» начался.\n"
-                f"Награда: {reward}.\n"
                 f"Время начала: {starts_at}."
             )
+        remaining = _format_remaining(int(reminder["starts_at"]) - now_ts)
         return (
             f"Напоминание: сбой «{name}» начнется {label}.\n"
-            f"Награда: {reward}.\n"
+            f"Осталось: {remaining}.\n"
             f"Время начала: {starts_at}."
         )
