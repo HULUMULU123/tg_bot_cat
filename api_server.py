@@ -1,7 +1,7 @@
 from datetime import datetime, timezone
 
 from fastapi import FastAPI, HTTPException
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 from telebot import TeleBot
 from telebot.apihelper import ApiTelegramException
 
@@ -31,9 +31,12 @@ def create_api_app(bot: TeleBot, api_secret: str, db: Database, reminders: Remin
     class CreateOutageRequest(BaseModel):
         secret: str
         name: str
-        reward: str | None = None
-        starts_at: str
-        ends_at: str
+        reward: str | int | None = None
+        starts_at: str = Field(alias="start_time")
+        ends_at: str = Field(alias="end_time")
+
+        class Config:
+            populate_by_name = True
 
     @app.post("/check-sub")
     async def check_subscription(payload: CheckSubscriptionRequest):
@@ -117,9 +120,10 @@ def create_api_app(bot: TeleBot, api_secret: str, db: Database, reminders: Remin
                 },
             )
 
+        reward_value = str(payload.reward) if payload.reward is not None else None
         outage_id, scheduled = reminders.schedule_outage(
             name=payload.name,
-            reward=payload.reward,
+            reward=reward_value,
             starts_at=int(starts_at.timestamp()),
             ends_at=int(ends_at.timestamp()),
         )
