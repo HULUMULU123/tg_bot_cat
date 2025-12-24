@@ -24,7 +24,7 @@ def load_settings(env_file: str | None = None) -> Settings:
     bot_token = os.getenv("BOT_TOKEN")
     api_secret = os.getenv("API_SECRET")
     db_path = os.getenv("DB_PATH") or str(Path(__file__).parent / "data.sqlite3")
-    game_url = os.getenv("GAME_URL", 't.me/stakanonlinebot/game')
+    game_url = os.getenv("GAME_URL", 'https://t.me/stakanonlinebot/game')
 
     if not bot_token:
         raise ValueError("BOT_TOKEN is required. Set it in the .env file or environment variables.")
