@@ -9,13 +9,18 @@ from keyboards.game_kb import notification_keyboard
 from storage import Database
 
 
-REMINDER_SCHEDULE = [
+START_REMINDER_SCHEDULE = [
     ("3d", timedelta(days=3)),
     ("1d", timedelta(days=1)),
     ("3h", timedelta(hours=3)),
     ("10m", timedelta(minutes=10)),
     ("5m", timedelta(minutes=5)),
     ("start", timedelta(seconds=0)),
+]
+
+END_REMINDER_SCHEDULE = [
+    ("end_5m", timedelta(minutes=5)),
+    ("end", timedelta(seconds=0)),
 ]
 
 def _format_ts(ts: int) -> str:
@@ -71,8 +76,13 @@ class ReminderService:
         outage_id = self._db.create_outage(name=name, reward=reward, starts_at=starts_at, ends_at=ends_at)
         now_ts = int(time.time())
         reminders: list[tuple[str, int]] = []
-        for reminder_type, delta in REMINDER_SCHEDULE:
+        for reminder_type, delta in START_REMINDER_SCHEDULE:
             send_at = int(starts_at - delta.total_seconds())
+            if send_at <= now_ts:
+                continue
+            reminders.append((reminder_type, send_at))
+        for reminder_type, delta in END_REMINDER_SCHEDULE:
+            send_at = int(ends_at - delta.total_seconds())
             if send_at <= now_ts:
                 continue
             reminders.append((reminder_type, send_at))
@@ -110,6 +120,7 @@ class ReminderService:
         name = reminder["name"]
         reward = reminder["reward"] or "—"
         starts_at = _format_ts(int(reminder["starts_at"]))
+        ends_at = _format_ts(int(reminder["ends_at"]))
         if reminder["type"] == "start":
             return (
                 "💥 СБОЙ НАЧАЛСЯ\n"
@@ -118,6 +129,22 @@ class ReminderService:
                 "🎟 Вход — за Crash\n"
                 # f"🏆 Награда: {reward}\n"
                 f"🕒 Время начала: {starts_at}"
+            )
+        if reminder["type"] == "end":
+            return (
+                "✅ СБОЙ ЗАВЕРШЕН\n"
+                f"📌 {name}\n"
+                # f"🏆 Награда: {reward}\n"
+                f"🕒 Время окончания: {ends_at}"
+            )
+        if reminder["type"] == "end_5m":
+            remaining = _format_remaining(int(reminder["ends_at"]) - now_ts)
+            return (
+                "⏳ СБОЙ СКОРО ЗАКОНЧИТСЯ\n"
+                f"📌 {name}\n"
+                f"💥 До окончания осталось {remaining}\n"
+                # f"🏆 Награда: {reward}\n"
+                f"🕒 Время окончания: {ends_at}"
             )
         remaining = _format_remaining(int(reminder["starts_at"]) - now_ts)
         return (
