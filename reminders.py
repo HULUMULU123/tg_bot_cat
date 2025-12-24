@@ -19,8 +19,9 @@ REMINDER_SCHEDULE = [
 ]
 
 def _format_ts(ts: int) -> str:
-    dt = datetime.fromtimestamp(ts, tz=timezone.utc)
-    return dt.strftime("%Y-%m-%d %H:%M UTC")
+    msk = timezone(timedelta(hours=3))
+    dt = datetime.fromtimestamp(ts, tz=msk)
+    return dt.strftime("%H:%M МСК")
 
 
 def _format_remaining(seconds: int) -> str:
