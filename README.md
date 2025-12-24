@@ -11,6 +11,7 @@
   - `POST /check-sub` для проверки подписки на канал по секрету API.
   - `POST /check-legal` для проверки, принял ли пользователь правила.
   - `POST /outages` для создания сбоя и напоминаний.
+  - `POST /outages/delete` для удаления сбоя по названию.
 
 ## Структура проекта
 ```
@@ -75,6 +76,17 @@ curl -X POST http://localhost:8000/outages \
 Ответ:
 ```json
 {"outage_id": 1, "scheduled": 6}
+```
+
+### Удаление сбоя
+```bash
+curl -X POST http://localhost:8000/outages/delete \
+  -H "Content-Type: application/json" \
+  -d '{"secret":"<API_SECRET>","name":"Технический сбой"}'
+```
+Ответ:
+```json
+{"deleted": 1}
 ```
 
 ## Примечания

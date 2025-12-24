@@ -102,6 +102,15 @@ class Database:
             self._conn.commit()
             return int(cursor.lastrowid)
 
+    def delete_outage_by_name(self, name: str) -> int:
+        with self._lock:
+            cursor = self._conn.execute(
+                "DELETE FROM outages WHERE name = ?",
+                (name,),
+            )
+            self._conn.commit()
+        return int(cursor.rowcount)
+
     def create_reminders(self, outage_id: int, reminders: list[tuple[str, int]]) -> int:
         now_ts = int(time.time())
         rows = [(outage_id, send_at, reminder_type, now_ts) for reminder_type, send_at in reminders]

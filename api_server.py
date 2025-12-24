@@ -28,6 +28,10 @@ def create_api_app(bot: TeleBot, api_secret: str, db: Database, reminders: Remin
         secret: str
         user_id: int
 
+    class DeleteOutageRequest(BaseModel):
+        secret: str
+        name: str
+
     class CreateOutageRequest(BaseModel):
         secret: str
         name: str
@@ -128,5 +132,19 @@ def create_api_app(bot: TeleBot, api_secret: str, db: Database, reminders: Remin
             ends_at=int(ends_at.timestamp()),
         )
         return {"outage_id": outage_id, "scheduled": scheduled}
+
+    @app.post("/outages/delete")
+    async def delete_outage(payload: DeleteOutageRequest):
+        if payload.secret != api_secret:
+            raise HTTPException(
+                status_code=403,
+                detail={
+                    "error": "Invalid secret",
+                    "hint": "Check API_SECRET and request payload",
+                },
+            )
+
+        deleted = db.delete_outage_by_name(payload.name)
+        return {"deleted": deleted}
 
     return app
