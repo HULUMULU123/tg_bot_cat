@@ -20,6 +20,7 @@ class Database:
                     user_id INTEGER PRIMARY KEY,
                     legal_accepted INTEGER NOT NULL DEFAULT 0,
                     legal_accepted_at INTEGER,
+                    notify_on INTEGER NOT NULL DEFAULT 0,
                     created_at INTEGER NOT NULL
                 );
 
@@ -47,6 +48,16 @@ class Database:
                 ON reminders (send_at);
                 """
             )
+            try:
+                self._conn.execute(
+                    "ALTER TABLE users ADD COLUMN notify_on INTEGER NOT NULL DEFAULT 0"
+                )
+            except sqlite3.OperationalError:
+                pass
+            try:
+                self._conn.execute("UPDATE users SET notify_on = 0 WHERE notify_on IS NULL")
+            except sqlite3.OperationalError:
+                pass
             self._conn.commit()
 
     def ensure_user(self, user_id: int) -> None:
@@ -80,11 +91,37 @@ class Database:
             ).fetchone()
         return bool(row["legal_accepted"]) if row else False
 
-    def list_user_ids(self, only_accepted: bool = True) -> list[int]:
+    def set_notify(self, user_id: int, enabled: bool) -> None:
+        now_ts = int(time.time())
+        with self._lock:
+            self._conn.execute(
+                "INSERT OR IGNORE INTO users (user_id, created_at) VALUES (?, ?)",
+                (user_id, now_ts),
+            )
+            self._conn.execute(
+                "UPDATE users SET notify_on = ? WHERE user_id = ?",
+                (1 if enabled else 0, user_id),
+            )
+            self._conn.commit()
+
+    def is_notify_enabled(self, user_id: int) -> bool:
+        with self._lock:
+            row = self._conn.execute(
+                "SELECT COALESCE(notify_on, 0) AS notify_on FROM users WHERE user_id = ?",
+                (user_id,),
+            ).fetchone()
+        return bool(row["notify_on"]) if row else False
+
+    def list_user_ids(self, only_accepted: bool = True, only_notify: bool = False) -> list[int]:
         query = "SELECT user_id FROM users"
         params: tuple = ()
+        conditions: list[str] = []
         if only_accepted:
-            query += " WHERE legal_accepted = 1"
+            conditions.append("legal_accepted = 1")
+        if only_notify:
+            conditions.append("COALESCE(notify_on, 0) = 1")
+        if conditions:
+            query += " WHERE " + " AND ".join(conditions)
         with self._lock:
             rows = self._conn.execute(query, params).fetchall()
         return [int(row["user_id"]) for row in rows]

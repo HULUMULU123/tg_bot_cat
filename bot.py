@@ -27,7 +27,7 @@ def main() -> None:
 
     db = Database(settings.db_path)
     db.init()
-    reminder_service = ReminderService(bot, db)
+    reminder_service = ReminderService(bot, db, game_url=settings.game_url)
     reminder_service.start()
 
     register_user_game_handlers(bot, db)

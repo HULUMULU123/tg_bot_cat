@@ -5,6 +5,7 @@ from datetime import datetime, timedelta, timezone
 from telebot import TeleBot
 from telebot.apihelper import ApiTelegramException
 
+from keyboards.game_kb import notification_keyboard
 from storage import Database
 
 
@@ -16,16 +17,6 @@ REMINDER_SCHEDULE = [
     ("5m", timedelta(minutes=5)),
     ("start", timedelta(seconds=0)),
 ]
-
-REMINDER_LABELS = {
-    "3d": "через 3 дня",
-    "1d": "через 1 день",
-    "3h": "через 3 часа",
-    "10m": "через 10 минут",
-    "5m": "через 5 минут",
-    "start": "сейчас",
-}
-
 
 def _format_ts(ts: int) -> str:
     dt = datetime.fromtimestamp(ts, tz=timezone.utc)
@@ -52,10 +43,17 @@ def _format_remaining(seconds: int) -> str:
 
 
 class ReminderService:
-    def __init__(self, bot: TeleBot, db: Database, poll_interval: int = 30) -> None:
+    def __init__(
+        self,
+        bot: TeleBot,
+        db: Database,
+        poll_interval: int = 30,
+        game_url: str | None = None,
+    ) -> None:
         self._bot = bot
         self._db = db
         self._poll_interval = poll_interval
+        self._game_url = game_url
         self._stop_event = threading.Event()
         self._thread: threading.Thread | None = None
 
@@ -89,7 +87,7 @@ class ReminderService:
             self._stop_event.wait(self._poll_interval)
 
     def _dispatch_reminders(self, reminders, now_ts: int) -> None:
-        user_ids = self._db.list_user_ids(only_accepted=True)
+        user_ids = self._db.list_user_ids(only_accepted=True, only_notify=True)
         if not user_ids:
             for reminder in reminders:
                 self._db.mark_reminder_sent(reminder["id"])
@@ -97,9 +95,10 @@ class ReminderService:
 
         for reminder in reminders:
             message = self._build_message(reminder, now_ts)
+            markup = self._build_markup(reminder)
             for user_id in user_ids:
                 try:
-                    self._bot.send_message(chat_id=user_id, text=message)
+                    self._bot.send_message(chat_id=user_id, text=message, reply_markup=markup)
                 except ApiTelegramException:
                     continue
                 except Exception:
@@ -110,15 +109,27 @@ class ReminderService:
         name = reminder["name"]
         reward = reminder["reward"] or "—"
         starts_at = _format_ts(int(reminder["starts_at"]))
-        label = REMINDER_LABELS.get(reminder["type"], "скоро")
         if reminder["type"] == "start":
             return (
-                f"Сбой «{name}» начался.\n"
-                f"Время начала: {starts_at}."
+                "💥 СБОЙ НАЧАЛСЯ\n"
+                f"📌 {name}\n"
+                "⏱ Время ограничено\n"
+                "🎟 Вход — за Crash\n"
+                f"🏆 Награда: {reward}\n"
+                f"🕒 Время начала: {starts_at}"
             )
         remaining = _format_remaining(int(reminder["starts_at"]) - now_ts)
         return (
-            f"Напоминание: сбой «{name}» начнется {label}.\n"
-            f"Осталось: {remaining}.\n"
-            f"Время начала: {starts_at}."
+            "⚠️ Обнаружена аномалия\n"
+            f"📌 {name}\n"
+            f"💥 Сбой начнется через {remaining}\n"
+            f"🏆 Награда: {reward}\n"
+            f"🕒 Время начала: {starts_at}"
+        )
+
+    def _build_markup(self, reminder):
+        return notification_keyboard(
+            notify_on=True,
+            show_enter=reminder["type"] == "start",
+            enter_url=self._game_url,
         )
